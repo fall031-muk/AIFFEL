@@ -44,7 +44,7 @@ class SigninView(View):
                 return JsonResponse({"MESSAGE":"EMPTY_VALUE_ERROR"}, status=400)
 
             if not User.objects.filter(user_id=user_id).exists():
-                return JsonResponse({"MESSAGE":"DOES_NOT_EXIST"}, status=401)
+                return JsonResponse({"MESSAGE":"USER_DOES_NOT_EXIST"}, status=401)
 
             user = User.objects.get(user_id=user_id)
             if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
