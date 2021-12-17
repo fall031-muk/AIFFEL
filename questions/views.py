@@ -76,8 +76,8 @@ class CommentView(View):
             question = get_object_or_404(Question, id=question_id)
             content  = data['content']
 
-            if content == None:
-                return JsonResponse({"MESSAGE":"EMPTY_CONTENT"})
+            if content == "":
+                return JsonResponse({"MESSAGE":"EMPTY_CONTENT"}, status=400)
 
             Comment.objects.create(
                 user     = user,
@@ -155,10 +155,7 @@ class LikeView(View):
             return JsonResponse({"MESSAGE":"QUESTION_DOES_NOT_EXIST"}, status=404)
         
         except KeyError:
-            return JsonResponse({'MESSAGE' : 'KEY ERROR'}, status=400)
-
-        except ValueError:
-            return JsonResponse({'MESSAGE' : 'VALUE ERROR'}, status=400)
+            return JsonResponse({"MESSAGE" : "KEY ERROR"}, status=400)
 
     @signin_decorator
     def get(self, request):
@@ -168,13 +165,14 @@ class LikeView(View):
         if not questions.exists():
             return JsonResponse({"MESSAGE":"QUESTION_DOES_NOT_EXIST"}, status=404)
         
-        max_count = questions.aggregate(max_count=Max('like_count'))
-        max_like = max_count['max_count']
+        max_count = questions.aggregate(max_count=Max("like_count"))
+        max_like = max_count["max_count"]
                 
         Result = [{
                 "title"      : question.title,
                 "content"    : question.content,
                 "user"       : question.user.user_id,
+                "like_count" : question.like_count,
                 "created_at" : question.created_at.strftime('%Y-%m-%d')
             }for question in questions if question.like_count==max_like]
         
