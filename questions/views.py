@@ -11,6 +11,9 @@ from users.signin_decorator import signin_decorator
 class QuestionView(View):
     @signin_decorator
     def post(self, request):
+        '''
+        권한 인가를 받은 회원이 질문을 저장하는 기능
+        '''
         try:
             data    = json.loads(request.body)
             user    = request.user
@@ -36,8 +39,11 @@ class QuestionView(View):
 
     @signin_decorator
     def put(self, request, question_id):
+        '''
+        권한 인가를 받은 회원이 질문을 수정하는 기능
+        '''
         try:
-            if not request.user == Question.objects.get(id=question_id).user:
+            if not request.user == Question.objects.get(id=question_id).user: # 접속 유저와 질문을 작성한 유저 일치여부 확인
                 return JsonResponse({"MESSAGE":"NOT_MATCHED_USER"}, status=401)
 
             data     = json.loads(request.body)
@@ -56,8 +62,11 @@ class QuestionView(View):
 
     @signin_decorator
     def delete(self, request, question_id):
+        '''
+        권한 인가를 받은 회원이 질문을 삭제하는 기능
+        '''
         try:
-            if not request.user == Question.objects.get(id=question_id).user:
+            if not request.user == Question.objects.get(id=question_id).user: # 접속 유저와 질문을 작성한 유저 일치여부 확인
                 return JsonResponse({"MESSAGE":"NOT_MATCHED_USER"}, status=401)
             question = Question.objects.filter(id=question_id, user=request.user)
             question.delete()
@@ -70,13 +79,16 @@ class QuestionView(View):
 class CommentView(View):
     @signin_decorator
     def post(self, request, question_id):
+        '''
+        권한 인가를 받은 회원이 댓글을 작성하는 기능
+        '''
         try:
             data     = json.loads(request.body)
             user     = request.user
             question = get_object_or_404(Question, id=question_id)
             content  = data['content']
 
-            if content == "":
+            if content == "": # 내용이 공백일 경우
                 return JsonResponse({"MESSAGE":"EMPTY_CONTENT"}, status=400)
 
             Comment.objects.create(
@@ -92,18 +104,24 @@ class CommentView(View):
     
     @signin_decorator
     def get(self, request, question_id):
-        question = get_object_or_404(Question, id=question_id)
+        '''
+        권한 인가를 받은 회원이 질문에 따른 댓글을 조회하는 기능
+        '''
+        question = get_object_or_404(Question, id=question_id) # 질문이 없을 경우 404 반환
         comments = Comment.objects.filter(question=question_id)
 
         Result = [{
             "content" : comment.content
         }for comment in comments]
 
-        return JsonResponse({"Title": question.title, "Rusult": Result}, status=200)
+        return JsonResponse({"Title": question.title, "Result": Result}, status=200)
 
 class QuestionSearchView(View):
     @signin_decorator
     def get(self, request):
+        '''
+        권한 인가를 받은 회원이 제목 또는 내용 검색을 통해 질문을 조회하는 기능 
+        '''
         title_search   = request.GET.get("title")
         content_search = request.GET.get('content')
         questions      = Question.objects.all()
@@ -126,6 +144,9 @@ class QuestionSearchView(View):
 class LikeView(View):
     @signin_decorator
     def post(self, request):
+        '''
+        권한 인가를 받은 회원이 질문에 대해 좋아요 또는 좋아요 취소를 하는 기능
+        '''
         try:
             data        = json.loads(request.body)
             question_id = data['question_id']
@@ -138,7 +159,6 @@ class LikeView(View):
                     user_id     = user.id,
                     question_id = question_id
                 )
-                print(like)
                 question.like_count += 1
                 question.save()
 
@@ -150,22 +170,22 @@ class LikeView(View):
                 question.save()
 
                 return JsonResponse({"MESSAGE":"LIKE_CANCEL"}, status=201)
-
-        except Question.DoesNotExist:
-            return JsonResponse({"MESSAGE":"QUESTION_DOES_NOT_EXIST"}, status=404)
         
         except KeyError:
             return JsonResponse({"MESSAGE" : "KEY ERROR"}, status=400)
 
     @signin_decorator
     def get(self, request):
+        '''
+        권한 인가를 받은 회원이 월별 좋아요가 가장 많은 질문을 조회하는 기능
+        '''
         year      = request.GET.get("year")
         month     = request.GET.get("month")
         questions = Question.objects.filter(created_at__year=year, created_at__month=month)
         if not questions.exists():
             return JsonResponse({"MESSAGE":"QUESTION_DOES_NOT_EXIST"}, status=404)
         
-        max_count = questions.aggregate(max_count=Max("like_count"))
+        max_count = questions.aggregate(max_count=Max("like_count")) # 가장 많은 좋아요 수 counting
         max_like = max_count["max_count"]
                 
         Result = [{
